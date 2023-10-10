@@ -1,0 +1,16 @@
+generate_dataset:
+  saving_folder: "data/text_generation"
+  dataset_name: "dataset.csv"
+  model_name : "falcon"
+  prompt_list : ["Most people start the day by", 
+    "Today I am feeling", 
+    "The thing I like most in the world is",
+    "When I was a little kid", 
+    "I had a terrifying dream last night in which",
+    "I worry a lot about"]
+  n_simulations : 10 # number of simulation by prompt
+  target_length : 100 # max length of the generated text
+  min_temperature : 0.9
+  max_temperature : 5
+  top_p:  0.95
+  retrospective_span: 100
