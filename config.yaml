@@ -1,7 +1,7 @@
 generate_dataset:
   saving_folder: "data/text_generation"
   dataset_name: "dataset.csv"
-  model_name : "falcon"
+  model_name : "falcon-1b" # "gpt2" or "falcon-1b"
   prompt_list : ["Most people start the day by", 
     "Today I am feeling", 
     "The thing I like most in the world is",

@@ -12,6 +12,8 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import numpy as np
 
+from src.utils import clean_generated_text
+
 def clean_gpu():
     """
     Clean the GPU memory
@@ -34,7 +36,7 @@ def load_model(model_name = "gpt2", logger = logging.getLogger(__name__)):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    if model_name == "falcon":
+    if model_name == "falcon-1b":
         tokenizer = AutoTokenizer.from_pretrained("euclaise/falcon_1b_stage2")
         model = AutoModelForCausalLM.from_pretrained("euclaise/falcon_1b_stage2", pad_token_id=tokenizer.eos_token_id).to(device)
 
@@ -136,20 +138,6 @@ def generate_from_prompt(prompt, model, tokenizer,
     return results
 
 
-def clean_generated_text(generated_text:str)->str:
-    """
-    Clean the generated text
-
-    Args:
-        generated_text (str): _description_
-
-    Returns:
-        str: _description_
-    """
-    cleaned_text = generated_text.replace("\n", " ")
-
-    return cleaned_text
-
 def generate_dataset_from_config(config, logger = logging.getLogger(__name__), save = False, clean = False):
 
     saving_folder = config["saving_folder"]
@@ -159,7 +147,7 @@ def generate_dataset_from_config(config, logger = logging.getLogger(__name__), s
     
     prompt_list = config["prompt_list"]
     model_name = config["model_name"]
-    saving_path = os.path.join(saving_folder, f"{model_name}_{config['dataset_name']}.csv")
+    saving_path = os.path.join(saving_folder, f"{model_name}_{config['dataset_name']}")
     n_sim = len(prompt_list) * config['n_simulations']
     
     logger.info(f"Generating {n_sim} simulations for model {model_name} and saving it to {saving_path}")

@@ -30,6 +30,11 @@ To control the generation, you can use the following arguments in config.yaml:
 - min_temperature: the temperature min of the generation
 - max_temperature: the temperature max of the generation
 
+if clean is set to True, the generated dataset will be cleaned using the following rules:
+- split into sentences
+- remove last incomplete sentence
+- remove special characters
+
 
 ## 2. Introduce a paraphrase at a specific place in the story. 
 
