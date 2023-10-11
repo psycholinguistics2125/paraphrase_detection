@@ -106,6 +106,42 @@ python -m unittest discover tests  # Using unittest
 
 ### b) The second step is to create a streamlit app to evaluate the quality of the paraphrase
 
+Certainly, here's a template for a README section for the Streamlit app. You can include this in a larger README for your project:
+
+---
+
+#### Paraphrase Quality Evaluation App
+
+The **Paraphrase Quality Evaluation App** is a Streamlit application designed to help evaluate the quality of paraphrases in a given dataset. The app allows users to select a dataset, view each sentence in the dataset one by one, emphasize the paraphrased sentence, and make modifications as needed. Users can validate the modified paraphrase, and the changes are saved to a new file.
+
+#### Features
+
+- **Dataset Selection**: Users can select a dataset and a specific altered dataset created with a model and parameters.
+- **Sentence-by-Sentence Review**: The app displays each sentence in the dataset one by one, emphasizing the paraphrased sentence for review.
+- **Paraphrase Modification**: Users can modify the paraphrased sentence as necessary.
+- **Validation**: A validation button allows users to save their changes for each sentence.
+
+#### Usage
+
+1. **Select Dataset and Model**: Choose a dataset and a corresponding altered dataset using the sidebar.
+Altered datasets are stored in the `data/altered` folder. if you want the App to work with your altered dataset, you need to place it in the `data/altered` folder. You can generate a new alterered dataset using the `main_generate_dataset.py` script.
+
+2. **Review and Modify**: Review sentences one by one, with the paraphrased sentence emphasized. Modify the paraphrase as needed.
+
+3. **Validation**: Click the "Validate" button to save the changes for the current sentence.
+
+4. **Continue**: Review and validate each sentence. Once all examples are checked, a message will indicate that all examples have been reviewed.
+
+#### Running the App
+1. Run the Streamlit app on local.
+
+```bash
+streamlit run paraphrase_evaluation_app.py
+```
+
+2. A deployed version is available on Streamlit
+
+/!\ the app may not be up to date
 
 ## 3. Evaluate how speech disorder technics found and evaluate this semantic repetition.
 
