@@ -2,3 +2,6 @@ pandas
 torch
 transformers
 pyyaml
+streamlit
+git+https://github.com/PrithivirajDamodaran/Parrot_Paraphraser.git
+nltk
