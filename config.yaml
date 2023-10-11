@@ -16,6 +16,9 @@ generate_dataset:
   retrospective_span: 100
 
 paraphrase_dataset:
+  source_dataset: "data/corpus/falcon-1b_dataset.csv"
+  saving_folder: "data/altered_corpus"
+  model_name: "ibm/qcpg-sentences"
   paraphrase_generator:
     # Default model for ParaphraseGenerator
     default_model: "ibm/qcpg-sentences"

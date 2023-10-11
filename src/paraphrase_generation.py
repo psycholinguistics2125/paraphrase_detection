@@ -113,7 +113,7 @@ def introduce_paraphrase(text, index, paraphrase_generator):
         _type_: _description_
     """
     # Split the text into sentences
-    sentences = text.split('. ')  # Assuming sentences are separated by period and space
+    sentences = text.split('.')  # Assuming sentences are separated by period and space
 
     # Check if I is within the valid range
     if index < 0 or index >= len(sentences):
@@ -129,7 +129,7 @@ def introduce_paraphrase(text, index, paraphrase_generator):
     sentences[index] = f"{original_sentence}. {paraphrase}"
 
     # Reconstruct the modified text
-    modified_text = '. '.join(sentences)
+    modified_text = '.'.join(sentences)
 
     return modified_text
 
