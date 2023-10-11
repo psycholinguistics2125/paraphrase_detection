@@ -1,3 +1,6 @@
+[![Code style: black](https://img.shields.io/badge/Code%20Style-Black-black)](https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html)
+
+
 # PARAPHRASE GENERATOR AND DETECTOR
 
 This repository was build to achieve the following goals:
@@ -109,6 +112,8 @@ python -m unittest discover tests  # Using unittest
 
 ---
 
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://paraphrase-evaluation.streamlit.app/)
+
 ### b) The second step is to create a streamlit app to evaluate the quality of the paraphrase
 
 Certainly, here's a template for a README section for the Streamlit app. You can include this in a larger README for your project:
@@ -145,6 +150,8 @@ streamlit run paraphrase_evaluation_app.py
 ```
 
 2. A deployed version is available on Streamlit
+
+link to the app: https://paraphrase-evaluation.streamlit.app/
 
 /!\ the app may not be up to date
 
