@@ -51,6 +51,7 @@ def main():
         else:
             dataset = load_dataset(os.path.join(dataset_folder, "altered_dataset.csv"))
             dataset["verified"] = 0
+            dataset["verified_text"] = dataset["altered_text"]
 
         config_dataset = load_config(
             os.path.join(dataset_folder, "dataset_model_kwargs.yaml")
@@ -79,7 +80,7 @@ def main():
         st.header("Loaded Dataset")
         st.dataframe(dataset[["altered_text", "index_paraphrase", "verified"]].head(5))
 
-        st.sidebar.write("To Do:")
+        st.sidebar.write("**Work In Progres**:")
         example_index = st.sidebar.empty()
 
         if "current_example" not in st.session_state:
@@ -122,7 +123,7 @@ def main():
         if verified:
             sentences[para_index + 1] = modified_sentence
             updated_text = ". ".join(sentences)
-            dataset.at[current_example, "text"] = updated_text
+            dataset.at[current_example, "verified_text"] = updated_text
             dataset.at[current_example, "verified"] = 1
             save_dataset(dataset, os.path.join(validated_file))
 
@@ -132,6 +133,15 @@ def main():
         if current_example == len(dataset):
             st.write("You have checked all examples.")
 
-
+        st.sidebar.write("Download your work at any time:")
+        download_button = st.sidebar.download_button(
+            label="Download Verified Dataset",
+            data=dataset.to_csv(index=False),
+            key="download_verified_dataset",
+            file_name="verified_dataset.csv",
+        )
+        if download_button:
+            st.write("File is ready for download.")
+            
 if __name__ == "__main__":
     main()
