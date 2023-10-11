@@ -14,3 +14,31 @@ generate_dataset:
   max_temperature : 5
   top_p:  0.95
   retrospective_span: 100
+
+paraphrase_dataset:
+  paraphrase_generator:
+    # Default model for ParaphraseGenerator
+    default_model: "ibm/qcpg-sentences"
+
+  paraphrase_models:
+    - "Vamsi/T5_Paraphrase_Paws"
+    - "umarin/chatgpt_paraphraser_on_T5_base"
+    - "prithivida/parrot_paraphraser_on_T5"
+    - "stanford-oval/paraphraser-bart-large"
+
+  quality_control_models:
+    - "ibm/qcpg-sentences"
+    - "ibm/qcpg-captions"
+    - "ibm/qcpg-questions"
+
+  parrot_kwargs:
+    diversity_ranker: "levenshtein"
+    do_diverse: 9
+    max_return_phrases: 10
+    adequacy_threshold: 0.1
+    fluency_threshold: 0.1
+
+  quality_control_kwargs:
+    lexical: 0.3
+    syntactic: 0.5
+    semantic: 0.8

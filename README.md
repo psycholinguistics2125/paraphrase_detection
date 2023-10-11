@@ -41,6 +41,68 @@ if clean is set to True, the generated dataset will be cleaned using the followi
 
 ### a) The first step is to create a paraphrase generator using SOTA models
 
+In order to realize this task, we sectioned various SOTA models for paraphrase generation on huggingfaceHub.
+
+#### Available Paraphrase Models
+
+The paraphrase generator supports various models for generating paraphrases. Here are the currently supported models:
+
+1. **Parrot Models:**
+   - "Vamsi/T5_Paraphrase_Paws": A T5-based paraphrase model. https://huggingface.co/Vamsi/T5_Paraphrase_Paws 
+   - "humarin/chatgpt_paraphraser_on_T5_base": Another T5-based model for paraphrasing.
+   https://huggingface.co/humarin/chatgpt_paraphraser_on_T5_base 
+   - "prithivida/parrot_paraphraser_on_T5": A T5-based model specialized in paraphrasing. https://huggingface.co/prithivida/parrot_paraphraser_on_T5
+   - "stanford-oval/paraphraser-bart-large": A BART-based paraphrase model. https://huggingface.co/stanford-oval/paraphraser-bart-large 
+
+2. **Quality Control Models:**
+Paper: https://aclanthology.org/2022.acl-long.45/
+code: https://github.com/ibm/quality-controlled-paraphrase-generation 
+
+   - "ibm/qcpg-sentences": A quality control model for sentences.
+   - "ibm/qcpg-captions": A quality control model for captions.
+   - "ibm/qcpg-questions": A quality control model for generating questions.
+
+You can select any of these models to generate paraphrases based on your specific needs.
+
+
+#### Usage
+
+To use the paraphrase generator, you can call the generate_paraphrase_from_model_name function and provide a model name and an input sentence. Here's an example:
+
+```python
+
+from src.paraphrase_generation import generate_paraphrase_from_model_name
+model_name = "Vamsi/T5_Paraphrase_Paws"
+input_sentence = "Input sentence to paraphrase."
+paraphrase = generate_paraphrase_from_model_name(input_sentence, model_name)
+print("Paraphrase:", paraphrase)
+```
+
+or use it to introduce a paraphrase at the i sentence in a story
+
+```python
+text = "long text. with multiple sentences"
+index = 2 # the index of the sentence where you want to introduce a paraphrase
+paraphrase_generator = ParaphraseGenerator(model_name="ibm/qcpg-sentences")
+altered_text = introduce_paraphrase(text, index, paraphrase_generator)
+```
+
+or use it to transform a dataset of text. The dataframe should contain a column named "text" with the text to paraphrase, a columns index_paraphrase with the index of the sentence where you want to introduce a paraphrase.
+
+
+```python
+df = introduce_paraphrases_to_dataset(df =data, model_name="ibm/qcpg-sentences")
+```
+
+
+
+#### Running Tests
+
+The project includes a sample test suite in the tests folder. To run the tests, use the following commands:
+
+```sh
+python -m unittest discover tests  # Using unittest
+```
 
 ### b) The second step is to create a streamlit app to evaluate the quality of the paraphrase
 
