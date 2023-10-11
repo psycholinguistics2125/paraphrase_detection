@@ -17,6 +17,8 @@ This repository was build to achieve the following goals:
 4. Run the main script: `python train_model.py 10`. If you want to train 10 models  for 10 random seed
 5. Analyze results in the `results` folder and using the log file: `deep_classification_text.log`.
 
+---
+
 ## 1. Generate dataset of story using small LLM such as GPT-2, falcon-1b etc.
 
 If you do not have a paraphrase dataset, you can generate one using the `main_generate_dataset.py` script.
@@ -38,6 +40,7 @@ if clean is set to True, the generated dataset will be cleaned using the followi
 
 ## 2. Introduce a paraphrase at a specific place in the story. 
 
+--- 
 
 ### a) The first step is to create a paraphrase generator using SOTA models
 
@@ -104,11 +107,13 @@ The project includes a sample test suite in the tests folder. To run the tests, 
 python -m unittest discover tests  # Using unittest
 ```
 
+---
+
 ### b) The second step is to create a streamlit app to evaluate the quality of the paraphrase
 
 Certainly, here's a template for a README section for the Streamlit app. You can include this in a larger README for your project:
 
----
+
 
 #### Paraphrase Quality Evaluation App
 
@@ -142,6 +147,8 @@ streamlit run paraphrase_evaluation_app.py
 2. A deployed version is available on Streamlit
 
 /!\ the app may not be up to date
+
+---
 
 ## 3. Evaluate how speech disorder technics found and evaluate this semantic repetition.
 
