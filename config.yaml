@@ -1,22 +1,22 @@
 generate_dataset:
-  saving_folder: "data/text_generation"
+  saving_folder: "data/corpus"
   dataset_name: "dataset.csv"
-  model_name : "falcon-1b" # "gpt2" or "falcon-1b"
+  model_name : "gpt2" # "gpt2" or "falcon-1b"
   prompt_list : ["Most people start the day by", 
     "Today I am feeling", 
     "The thing I like most in the world is",
     "When I was a little kid", 
     "I had a terrifying dream last night in which",
     "I worry a lot about"]
-  n_simulations : 10 # number of simulation by prompt
-  target_length : 100 # max length of the generated text
+  n_simulations : 100 # number of simulation by prompt
+  target_length : 200 # max length of the generated text
   min_temperature : 0.9
   max_temperature : 5
   top_p:  0.95
-  retrospective_span: 100
+  retrospective_span: 200
 
 paraphrase_dataset:
-  source_dataset: "data/corpus/falcon-1b_dataset.csv"
+  source_dataset: "data/corpus/gpt2_dataset.csv"
   saving_folder: "data/altered_corpus"
   model_name: "ibm/qcpg-sentences"
   paraphrase_generator:

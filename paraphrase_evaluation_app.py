@@ -50,6 +50,7 @@ def main():
             dataset = dataset[dataset["verified"] == 0]  # load only unverified examples
         else:
             dataset = load_dataset(os.path.join(dataset_folder, "altered_dataset.csv"))
+            dataset["evaluation"] = 0
             dataset["verified"] = 0
             dataset["verified_text"] = dataset["altered_text"]
 
@@ -59,6 +60,7 @@ def main():
 
         st.sidebar.write("Dataset Summary:")
         st.sidebar.write(f"Number of Examples: {len(dataset)}")
+        st.sidebar.write(f"Text was generate using : {config_dataset['source_dataset'].split('/')[-1]}")
         st.sidebar.write(
             f"The paraphrases were generated using the model: {config_dataset['model_name']}"
         )
@@ -78,7 +80,7 @@ def main():
             st.sidebar.write(elt)
 
         st.header("Loaded Dataset")
-        st.dataframe(dataset[["altered_text", "index_paraphrase", "verified"]].head(5))
+        st.dataframe(dataset[["altered_text", "index_paraphrase", "evaluation"]].head(5))
 
         st.sidebar.write("**Work In Progres**:")
         example_index = st.sidebar.empty()
@@ -109,26 +111,34 @@ def main():
         st.subheader(
             f"The sentence n°{int(para_index + 1)} was paraphrased into n°{int(para_index + 2)}"
         )
-        st.write("Please validate the paraphrase or modify it and click on validate.")
+        st.write("Please evaluate the quality of the paraphrase.")
 
         # Create a text input for modifying the paraphrase
-        modified_sentence = st.text_area(
-            f"Original sentence:  {sentences[para_index]}",
-            sentences[para_index + 1],
-            key=f"sentence-{para_index}",
-            height=100,
-        )
-        verified = st.button("Validate")
+        col1,col2 = st.columns(2)
 
-        if verified:
-            sentences[para_index + 1] = modified_sentence
-            updated_text = ". ".join(sentences)
-            dataset.at[current_example, "verified_text"] = updated_text
+        with col1:
+            good = st.button("Good enough")
+        with col2:
+            not_good = st.button("Not good enough")
+
+        if good:
+      
+            dataset.at[current_example, "evaluation"] = 1
             dataset.at[current_example, "verified"] = 1
             save_dataset(dataset, os.path.join(validated_file))
 
             current_example += 1
             st.session_state.current_example = current_example
+        
+        elif not_good:
+            dataset.at[current_example, "evaluation"] = 0
+            dataset.at[current_example, "verified"] = 1
+            save_dataset(dataset, os.path.join(validated_file))
+
+            current_example += 1
+            st.session_state.current_example = current_example
+
+
 
         if current_example == len(dataset):
             st.write("You have checked all examples.")

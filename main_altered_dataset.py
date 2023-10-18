@@ -21,7 +21,11 @@ if __name__ == "__main__":
     # Load the dataset
     dataset_path = config["source_dataset"]
     dataset_name = dataset_path.split("/")[-1].split(".")[0]
-    dataset = pd.read_csv(dataset_path)
+    try : 
+        dataset = pd.read_csv(dataset_path)
+    except : 
+        dataset = pd.read_csv(dataset_path, sep="\t")
+        
     logger.info("Loaded dataset from %s", dataset_path)
 
     # generate the index
