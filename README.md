@@ -157,6 +157,14 @@ link to the app: https://paraphrase-evaluation.streamlit.app/
 
 ---
 
-## 3. Evaluate how speech disorder technics found and evaluate this semantic repetition.
+
+## 3. Online Paraphrasing. 
+
+In the config file if config['generate_dataset']['online'] is set to True, then the generation process will add a paraphrase with a probability of config['online_param']['p_paraphrase'] at each step of the process.
+
+In consequences, the next step of text generation will be influenced by this repetition. This will mimic more precisely the human speech disorder.
+--- 
+
+## 4. Evaluate how speech disorder technics found and evaluate this semantic repetition.
 
 

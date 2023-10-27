@@ -35,8 +35,9 @@ if __name__ == "__main__":
     # Apply model
     model_name = config["model_name"]
     logger.info("Loading model %s", model_name)
+
     saving_folder = os.path.join(
-        config["saving_folder"], f"{model_name.replace('/','-')}_{dataset_name}"
+        config["saving_folder"],"offline", f"{model_name.replace('/','-')}_{dataset_name}"
     )
     if not os.path.exists(saving_folder):
         os.makedirs(saving_folder)
