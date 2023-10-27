@@ -13,7 +13,7 @@ parrot_kwargs:
   fluency_threshold: 0.1
   max_return_phrases: 10
 quality_control_kwargs:
-  lexical: 0.3
+  lexical: 0.6
   semantic: 0.8
   syntactic: 0.5
 quality_control_models:
@@ -21,4 +21,4 @@ quality_control_models:
 - ibm/qcpg-captions
 - ibm/qcpg-questions
 saving_folder: data/altered_corpus
-source_dataset: data/corpus/falcon-1b_dataset.csv
+source_dataset: data/corpus/gpt2_dataset.csv

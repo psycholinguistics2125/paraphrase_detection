@@ -7,7 +7,7 @@ import logging
 from tqdm import tqdm
 
 # transformers imports
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelForSeq2SeqLM
 import torch
 import numpy as np
 
@@ -48,6 +48,28 @@ def load_model(model_name="gpt2", logger=logging.getLogger(__name__)):
         model = AutoModelForCausalLM.from_pretrained(
             "gpt2-large", pad_token_id=tokenizer.eos_token_id
         ).to(device)
+
+    elif model_name =="stablelm-3b":
+        # result comparable to falcon but slower
+        tokenizer = AutoTokenizer.from_pretrained("stabilityai/stablelm-3b-4e1t")
+        model = AutoModelForCausalLM.from_pretrained("stabilityai/stablelm-3b-4e1t",
+                                                     trust_remote_code=True,
+                                                     torch_dtype="auto",  pad_token_id=tokenizer.eos_token_id).to(device)
+       
+    elif model_name =="mt5": 
+        # too slow and poor story geenration quality
+        tokenizer = AutoTokenizer.from_pretrained("google/mt5-large")
+        model = AutoModelForSeq2SeqLM.from_pretrained("google/mt5-large", pad_token_id=tokenizer.eos_token_id).to(device)
+    
+    elif model_name == "gpt-neo":
+        # too heavt
+        tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neo-2.7B")
+        model = AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-neo-2.7B", pad_token_id=tokenizer.eos_token_id).to(device)
+    
+    elif model_name == "bloomz":
+        #~ too slow and performance not better than gpt2
+        tokenizer = AutoTokenizer.from_pretrained("bigscience/mt0-large")
+        model = AutoModelForSeq2SeqLM.from_pretrained("bigscience/mt0-large", pad_token_id=tokenizer.eos_token_id).to(device)
 
     else:
         logger.error("Unknown model name")

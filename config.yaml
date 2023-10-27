@@ -8,12 +8,14 @@ generate_dataset:
     "When I was a little kid", 
     "I had a terrifying dream last night in which",
     "I worry a lot about"]
-  n_simulations : 100 # number of simulation by prompt
+  n_simulations : 10 # number of simulation by prompt
   target_length : 200 # max length of the generated text
   min_temperature : 0.9
   max_temperature : 5
   top_p:  0.95
+  top_k:  50
   retrospective_span: 200
+  online : True
 
 paraphrase_dataset:
   source_dataset: "data/corpus/gpt2_dataset.csv"
@@ -42,6 +44,10 @@ paraphrase_dataset:
     fluency_threshold: 0.1
 
   quality_control_kwargs:
-    lexical: 0.3
+    lexical: 0.6
     syntactic: 0.5
     semantic: 0.8
+
+online_param:
+  nb_paraphrase_max : 1 #nb of paraphrase to generate during the process max
+  p_paraphrase : 0.1 #probability to paraphrase at each step
