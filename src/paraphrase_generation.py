@@ -12,11 +12,12 @@ from parrot import Parrot
 
 import logging
 from transformers import pipeline
+from openai import OpenAI
 
 
 class ParaphraseGenerator:
     def __init__(
-        self, model_name, logger=None, parrot_kwargs=None, quality_control_kwargs=None
+        self, model_name, logger=None, parrot_kwargs=None, quality_control_kwargs=None, openai_kwargs=None
     ):
         self.model_name = model_name
         self.generator = None
@@ -32,6 +33,10 @@ class ParaphraseGenerator:
             "syntactic": 0.5,
             "semantic": 0.8,
         }
+        self.openai_kwargs = openai_kwargs or {
+            "temperature": 0.9,
+            'model_name': "gpt-3.5-turbo"}
+        
         self.logger = logger if logger is not None else logging.getLogger(__name__)
         self.load_generator()
 
@@ -55,6 +60,10 @@ class ParaphraseGenerator:
                 model_name=self.model_name, kwargs=self.quality_control_kwargs
             )
             self.logger.info("Loaded QualityControlGenerator")
+        
+        elif self.model_name in ["gpt-3.5-turbo", 'text-davinci-002']:
+            self.generator = OpenAiGenerator( model_name=self.model_name,**self.openai_kwargs)
+        
         else:
             self.logger.error(
                 "Invalid model_name. Supported values: Parrot or Quality Control models."
@@ -95,6 +104,46 @@ class QualityControlGenerator:
 
     def paraphrase(self, input_phrase):
         return self.quality_control(input_phrase)
+    
+class OpenAiGenerator:
+    def __init__(self, model_name,temperature,client=  OpenAI() , max_tokens = 200, kwargs=None):
+        self.paraphrase_model = model_name
+        self.paraphrase_temperature = temperature
+        self.max_tokens = max_tokens
+        self.client = client
+        
+    def paraphrase(self, input_phrase):
+        prompt = f"Paraphrase the following sentence:\n'{input_phrase}'. Minimize the word in common with the original sentence. \n\nParaphrased sentence:"
+    
+        # Call the OpenAI API
+        if self.paraphrase_model in ['text-davinci-002']:
+            response = self.client.completions.create(
+                model=self.paraphrase_model,
+                prompt=prompt,
+                max_tokens=self.max_tokens,  # You can adjust this parameter based on your preference
+                temperature=self.paraphrase_temperature  # You can experiment with different temperature values
+                )
+            
+            text_paraphrase = response.choices[0].text.strip()
+        
+        elif self.paraphrase_model in ['gpt-3.5-turbo']:
+            response = self.client.chat.completions.create(
+            model= self.paraphrase_model,
+            temperature=self.paraphrase_temperature,
+            max_tokens=self.max_tokens,
+            messages=[
+            {"role": "user", "content": f"Paraphrase the  following sentence,  minimize the word in common with the original sentence. Sentence: {input_phrase}"},
+                ],
+                )
+            text_paraphrase = response.choices[0].message.content.strip()
+
+        else :
+            raise ValueError(
+                "Invalid model_name. Supported values: OpenAi models."
+            )
+            text_paraphrase = None
+        return text_paraphrase
+           
 
 
 class QualityControlPipeline:
@@ -196,7 +245,7 @@ def introduce_paraphrases_to_dataset(df, model_name, save_path=None, logger=None
     # Iterate through the DataFrame rows
     for index, row in df.iterrows():
         text = row["text"]
-        index_paraphrase = row["index_paraphrase"]
+        index_paraphrase = row["index_paraphrase"][0]
 
         try:
             # Introduce the paraphrase into the text

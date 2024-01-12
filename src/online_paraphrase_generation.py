@@ -11,7 +11,7 @@ from tqdm import tqdm
 import pandas as pd
 import yaml
 
-from src.utils import load_config, split_into_sentences, replace_multiple_periods
+from src.utils import load_config, split_into_sentences, replace_multiple_periods, generate_random_index_for_paraphrase_location
 
 from src.paraphrase_generation import generate_paraphrase_from_model_name, ParaphraseGenerator
 from src.text_generation import load_model, generate_random_temperature, clean_generated_text
@@ -38,6 +38,8 @@ def generate_from_prompt_with_paraphrases(
     excluded_tokens_list=["\n", "http", "www.", "UESPWiki", "\n\n", "\n\n\n", "50256"],
     device=None,
     p_paraphrase=0.1,
+    q_paraphrase=0.5,
+    alpha=2.0,
 
 ):
     if device is None:
@@ -54,7 +56,8 @@ def generate_from_prompt_with_paraphrases(
     cont = True
     previous = True
     sentence_count = 0  # Keep track of the number of sentences generated
-    paraphrased_index = [0]
+    paraphrased_indexes = [(0,0)]
+    paraphase_type = []
     nb_paraphrase = 0
 
     while cont:
@@ -85,30 +88,25 @@ def generate_from_prompt_with_paraphrases(
 
         # Introduce a paraphrase acording to the probability p_paraphrase and if not the first sentence and if not too many paraphrases
         # At each genration process
-        if random.random() < p_paraphrase  and sentence_count > 1 and nb_paraphrase < nb_paraphrase_max and paraphrased_index[-1] + 2 < sentence_count : # if we did not do a paraphrase in the previous step
+        if random.random() < p_paraphrase  and sentence_count > 2 and nb_paraphrase < nb_paraphrase_max :
            
             print("doing paraphrase...")
+            # where we want to insert paraphrase
+            if random.random() < q_paraphrase : #we do close repetition
+                paraphrased_index = generate_random_index_for_paraphrase_location(len(new_sentences[:-1]), alpha=alpha, type = "close")
+                paraphase_type.append("close")
+            else: # we do distant repetition
+                paraphrased_index = generate_random_index_for_paraphrase_location(len(new_sentences[:-1]), alpha=alpha, type = "distant")
+                print("############# Para index", paraphrased_index)
+                paraphase_type.append("distant")
+
+            paraphrased_indexes.append((paraphrased_index,sentence_count -1)) # we add the index of the paraphrase and the index it is inserted after
+            selected_sentence = new_sentences[paraphrased_index]
+            paraphrase = paraphrase_generator.paraphrase(selected_sentence)
+            new_sentences = new_sentences[:-1] + [paraphrase] + [new_sentences[-1]]
+
             # extract the last sentence and it's ID
-            if new_sentences[-1][-1] == ".": # If the last sentence ends with a "." then its complete
-                last_sentence = new_sentences[-1]
-                new_sentences = new_sentences + [paraphrase_generator.paraphrase(last_sentence)] # we add a paraphrase after the last sentence
-                paraphrased_index.append(sentence_count)
-                print("last sentence ended with a .")
-            else: # If the last sentence does not end with a "." then it is incomplete
-                if len(new_sentences) > 1: # If there is more than one sentence in the output
-                    last_sentence = new_sentences[-2] # the last complete sentence is the second to last sentence
-                    #print(tokenizer.decode(output_only[0]))
-                    #print(new_sentences)
-                    paraphrase = paraphrase_generator.paraphrase(last_sentence)
-                    new_sentences = new_sentences[:-1] + [paraphrase] + [new_sentences[-1]] # we add a paraphrase after the last sentence
-                    paraphrased_index.append(sentence_count-1)
-                    print("inserting paraphrase between two sentences")
-                    print(paraphrase, last_sentence)
-                else :
-                    last_sentence = new_sentences[0] # there is only one sentence in the output, so the last complete sentence is the first sentence
-                    new_sentences = new_sentences + [paraphrase_generator.paraphrase(last_sentence)] # we add a paraphrase after the last sentence even if incomplete
-                    paraphrased_index.append(sentence_count)
-                    print("inserting paraphrase after the only sentence")
+            
                         
             altered_text = " ".join(new_sentences)
             altered_text = replace_multiple_periods(altered_text)
@@ -138,7 +136,7 @@ def generate_from_prompt_with_paraphrases(
 
       
     results = tokenizer.decode(output_all[0], skip_special_tokens=False)
-    return results, paraphrased_index[1:]
+    return results, paraphrased_indexes[1:], paraphase_type
 
 
 
@@ -146,7 +144,13 @@ def generate_online_paraphrase_dataset_from_config(
     config, logger=logging.getLogger(__name__), save=False, clean=False
 ):
     model_name = config['generate_dataset']["model_name"]
-    saving_folder = os.path.join(config['paraphrase_dataset']["saving_folder"],f"online_{model_name}")
+    para_model_name = config['paraphrase_dataset']["model_name"]
+    para_model_name_str = config['paraphrase_dataset']["model_name"].replace("/","-")
+    nb_paraphrase_max = config['online_param']["nb_paraphrase_max"]
+    p_paraphrase = config['online_param']["p_paraphrase"]
+    q_paraphrase = config['online_param']["q_paraphrase"]
+    str_alpha = str(config['online_param']["alpha"]).replace(".","-")
+    saving_folder = os.path.join(config['paraphrase_dataset']["saving_folder"],f"online_{model_name}_paraphrase-{para_model_name_str}_n{nb_paraphrase_max}_p{p_paraphrase}_q{q_paraphrase}_alpha{str_alpha}")
     if not os.path.exists(saving_folder):
         os.makedirs(saving_folder)
 
@@ -155,8 +159,9 @@ def generate_online_paraphrase_dataset_from_config(
     n_sim = len(prompt_list) * config["generate_dataset"]["n_simulations"]
 
     quality_control_kwargs  = config['paraphrase_dataset']["quality_control_kwargs"]
-    para_model_name = config['paraphrase_dataset']["model_name"]
-    generator = ParaphraseGenerator(model_name=para_model_name, quality_control_kwargs=quality_control_kwargs)
+    openai_kwargs = config['paraphrase_dataset']["openai_kwargs"]
+   
+    generator = ParaphraseGenerator(model_name=para_model_name, quality_control_kwargs=quality_control_kwargs, openai_kwargs=openai_kwargs)
 
     logger.info(
         f"Generating {n_sim} simulations for model {model_name} and saving it to {saving_path}"
@@ -170,13 +175,13 @@ def generate_online_paraphrase_dataset_from_config(
 
     # Init dataset
     dataset = pd.DataFrame(
-        columns=["prompt", "generated_text", "model_name", "temperature", "num_beams","index_paraphrase"]
+        columns=["prompt", "generated_text", "model_name", "temperature", "num_beams","index_paraphrase",'paraphase_type']
     )
 
     temperature_list = generate_random_temperature(
         n_sim=n_sim, min=config['generate_dataset']["min_temperature"], max=config['generate_dataset']["max_temperature"]
     )
-    num_beams_list = [random.randint(3, 5) for _ in range(n_sim)]
+    num_beams_list = [random.randint(4, 5) for _ in range(n_sim)]
 
     # Load model
     model, tokenizer = load_model(model_name=model_name)
@@ -188,7 +193,7 @@ def generate_online_paraphrase_dataset_from_config(
         for i in tqdm(range(config['generate_dataset']["n_simulations"])):
             temperature = temperature_list.pop()
             num_beams = num_beams_list.pop()
-            generated_text, paraphrase_index = generate_from_prompt_with_paraphrases(
+            generated_text, paraphrase_index , paraphase_type= generate_from_prompt_with_paraphrases(
                 prompt = prompt,
                 model = model,
                 tokenizer = tokenizer,
@@ -201,11 +206,13 @@ def generate_online_paraphrase_dataset_from_config(
                 top_p=config['generate_dataset']["top_p"],
                 top_k=config['generate_dataset']["top_k"],
                 p_paraphrase=config['online_param']["p_paraphrase"],
+                q_paraphrase=config['online_param']["q_paraphrase"],
+                alpha=config['online_param']["alpha"],
             )
             try :
                 index_paraphrase = paraphrase_index[0]
             except:
-                index_paraphrase = 0
+                index_paraphrase = (0,0)
             dataset.loc[k] = pd.Series(
                 {
                     "prompt": prompt,
@@ -213,7 +220,8 @@ def generate_online_paraphrase_dataset_from_config(
                     "model_name": model_name,
                     "temperature": temperature,
                     "num_beams": num_beams,
-                    "index_paraphrase": index_paraphrase-1,
+                    "index_paraphrase": index_paraphrase,
+                    "paraphase_type" : paraphase_type
                 }
             )
             k += 1
@@ -233,3 +241,26 @@ def generate_online_paraphrase_dataset_from_config(
             documents = yaml.dump(config['paraphrase_dataset'], file)
 
     return dataset
+
+
+
+"""if new_sentences[-1][-1] == ".": # If the last sentence ends with a "." then its complete
+                last_sentence = new_sentences[-1]
+                new_sentences = new_sentences + [paraphrase_generator.paraphrase(last_sentence)] # we add a paraphrase after the last sentence
+                paraphrased_index.append(sentence_count)
+                print("last sentence ended with a .")
+            else: # If the last sentence does not end with a "." then it is incomplete
+                if len(new_sentences) > 1: # If there is more than one sentence in the output
+                    last_sentence = new_sentences[-2] # the last complete sentence is the second to last sentence
+                    #print(tokenizer.decode(output_only[0]))
+                    #print(new_sentences)
+                    paraphrase = paraphrase_generator.paraphrase(last_sentence)
+                    new_sentences = new_sentences[:-1] + [paraphrase] + [new_sentences[-1]] # we add a paraphrase after the last sentence
+                    paraphrased_index.append(sentence_count-1)
+                    print("inserting paraphrase between two sentences")
+                    print(paraphrase, last_sentence)
+                else :
+                    last_sentence = new_sentences[0] # there is only one sentence in the output, so the last complete sentence is the first sentence
+                    new_sentences = new_sentences + [paraphrase_generator.paraphrase(last_sentence)] # we add a paraphrase after the last sentence even if incomplete
+                    paraphrased_index.append(sentence_count)
+                    print("inserting paraphrase after the only sentence")"""

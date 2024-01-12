@@ -13,6 +13,9 @@ import numpy as np
 
 from src.utils import clean_generated_text
 
+from openai import OpenAI
+
+
 
 def clean_gpu():
     """
@@ -57,12 +60,12 @@ def load_model(model_name="gpt2", logger=logging.getLogger(__name__)):
                                                      torch_dtype="auto",  pad_token_id=tokenizer.eos_token_id).to(device)
        
     elif model_name =="mt5": 
-        # too slow and poor story geenration quality
+        # too slow and poor story generation quality
         tokenizer = AutoTokenizer.from_pretrained("google/mt5-large")
         model = AutoModelForSeq2SeqLM.from_pretrained("google/mt5-large", pad_token_id=tokenizer.eos_token_id).to(device)
     
     elif model_name == "gpt-neo":
-        # too heavt
+        # too heavy
         tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neo-2.7B")
         model = AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-neo-2.7B", pad_token_id=tokenizer.eos_token_id).to(device)
     
@@ -70,7 +73,9 @@ def load_model(model_name="gpt2", logger=logging.getLogger(__name__)):
         #~ too slow and performance not better than gpt2
         tokenizer = AutoTokenizer.from_pretrained("bigscience/mt0-large")
         model = AutoModelForSeq2SeqLM.from_pretrained("bigscience/mt0-large", pad_token_id=tokenizer.eos_token_id).to(device)
-
+    elif model_name == "pythia":
+        tokenizer = AutoTokenitokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-1.4b-v0")
+        model = AutoModelForCausalLM.from_pretrained("EleutherAI/pythia-1.4b-v0",  pad_token_id=tokenizer.eos_token_id).to(device)
     else:
         logger.error("Unknown model name")
         raise ValueError("Unknown model name")
@@ -177,6 +182,10 @@ def generate_from_prompt(
     return results
 
 
+
+
+
+
 def generate_dataset_from_config(
     config, logger=logging.getLogger(__name__), save=False, clean=False
 ):
@@ -208,8 +217,20 @@ def generate_dataset_from_config(
     num_beams_list = [random.randint(3, 5) for _ in range(n_sim)]
 
     # Load model
-    model, tokenizer = load_model(model_name=model_name)
-
+    if model_name in ["falcon-1b", "gpt2", "stablelm-3b","pythia"]:
+        model, tokenizer = load_model(model_name=model_name)
+        def text_generation_function(prompt, temperature, num_beams):
+            return generate_from_prompt(
+                prompt,
+                model = model,
+                tokenizer = tokenizer,
+                temperature=temperature,
+                num_beams=num_beams,
+                target_length=config["target_length"],
+                retrospective_span=config["retrospective_span"],
+                top_p=config["top_p"],
+            )
+        
     # Generate dataset
     k = 0
     for prompt in prompt_list:
@@ -217,16 +238,10 @@ def generate_dataset_from_config(
         for i in tqdm(range(config["n_simulations"])):
             temperature = temperature_list.pop()
             num_beams = num_beams_list.pop()
-            generated_text = generate_from_prompt(
-                prompt,
-                model,
-                tokenizer,
-                temperature=temperature,
-                num_beams=num_beams,
-                target_length=config["target_length"],
-                retrospective_span=config["retrospective_span"],
-                top_p=config["top_p"],
-            )
+            generated_text = text_generation_function(
+                    prompt,
+                    temperature=temperature,
+                    num_beams=num_beams )
 
             dataset.loc[k] = pd.Series(
                 {
@@ -239,6 +254,11 @@ def generate_dataset_from_config(
             )
             k += 1
 
+    
+    
+    
+    
+    
     if clean:
         logger.info("Cleaning text dataset")
         dataset["text"] = dataset["generated_text"].apply(
