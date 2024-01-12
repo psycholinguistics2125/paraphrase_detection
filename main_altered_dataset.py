@@ -30,11 +30,13 @@ if __name__ == "__main__":
 
     # generate the index
     dataset["index_paraphrase"] = dataset["text"].apply(
-        lambda x: random.randint(1, len(x.split(".")) - 1)
+        lambda x: (random.randint(1, len(x.split(".")) - 1), len(x.split(".")) - 1)
     )
     # Apply model
     model_name = config["model_name"]
     logger.info("Loading model %s", model_name)
+
+    logger.info(f'Paraphrasing using {config["online"]}')
 
     saving_folder = os.path.join(
         config["saving_folder"],"offline", f"{model_name.replace('/','-')}_{dataset_name}"

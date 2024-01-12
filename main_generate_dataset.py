@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     logger.info("Generating dataset...")
     logger.info(
-        "/!\ /!\ If this is the first time you run this script, it may take a while to download the models..."
+        "/!\ /!\ If this is the first time you run this script, it may take a while to download the models from hugging facehub..."
     )
     online = config['generate_dataset']["online"]
     if online:
