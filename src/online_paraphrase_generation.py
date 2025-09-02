@@ -150,9 +150,13 @@ def generate_online_paraphrase_dataset_from_config(
     p_paraphrase = config['online_param']["p_paraphrase"]
     q_paraphrase = config['online_param']["q_paraphrase"]
     str_alpha = str(config['online_param']["alpha"]).replace(".","-")
-    saving_folder = os.path.join(config['paraphrase_dataset']["saving_folder"],f"online_{model_name}_paraphrase-{para_model_name_str}_n{nb_paraphrase_max}_p{p_paraphrase}_q{q_paraphrase}_alpha{str_alpha}")
+    str_temperature = f"_{config['generate_dataset']['min_temperature']}-{config['generate_dataset']['max_temperature']}"
+    saving_folder = os.path.join(config['paraphrase_dataset']["saving_folder"],f"online_{model_name}_paraphrase-{para_model_name_str}_n{nb_paraphrase_max}_p{p_paraphrase}_q{q_paraphrase}_alpha{str_alpha}_temperature{str_temperature}")
     if not os.path.exists(saving_folder):
         os.makedirs(saving_folder)
+    else : 
+        logger.warning(f"Folder {saving_folder} already exists. The dataset will be changed")
+        return None
 
     prompt_list = config['generate_dataset']["prompt_list"]
     saving_path = os.path.join(saving_folder, f"altered_dataset.csv")
@@ -179,7 +183,7 @@ def generate_online_paraphrase_dataset_from_config(
     )
 
     temperature_list = generate_random_temperature(
-        n_sim=n_sim, min=config['generate_dataset']["min_temperature"], max=config['generate_dataset']["max_temperature"]
+        n_sim=n_sim, minimum=config['generate_dataset']["min_temperature"], maximum=config['generate_dataset']["max_temperature"]
     )
     num_beams_list = [random.randint(4, 5) for _ in range(n_sim)]
 
@@ -216,7 +220,7 @@ def generate_online_paraphrase_dataset_from_config(
             dataset.loc[k] = pd.Series(
                 {
                     "prompt": prompt,
-                    "generated_text": generated_text,
+                    "generated_text": generated_text.replace("\n", " ").replace("\t", " "),
                     "model_name": model_name,
                     "temperature": temperature,
                     "num_beams": num_beams,

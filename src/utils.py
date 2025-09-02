@@ -170,59 +170,100 @@ def flatten_list(input_list):
 
 
 
-def aggregate_dataset(model_name_list, config):
+def aggregate_dataset(model_name_list, config, paraphrase_model_list = ["gpt-3.5-turbo","ibm-qcpg-sentences"]):
     agg_dataset = pd.DataFrame()
     for model_name in model_name_list: 
         data_folder =os.path.join(config['data_folder'], "altered_corpus")
         #loading offline corpus
         data = pd.read_csv(os.path.join(config['data_folder'],"corpus",f"offline_{model_name}_dataset.csv"),sep="\t")
+        for str_temp in ['_temperature_2-3',"_temperature_4-5"]:
+           
+            new_data = pd.read_csv(os.path.join(config['data_folder'],"corpus",f"offline_{model_name}{str_temp}_dataset.csv"),sep="\t")
+            data = pd.concat([data,new_data])
+      
         # initiate the columns
         data['llm_model'] = model_name
         data['paraphrase_model'] = None
         data['altered_text'] = data['text']
         data['nb_paraphrase_max'] = 0
         data['paraphase_type'] = ['absent']*len(data)
-        for paraphrase_model in ["gpt-3.5-turbo","ibm-qcpg-sentences"]: #text-davinci-002
-            for nb_paraphrase in [1]:
-                for p_paraphrase in [0.1]:
-                    for q_paraphrase in [0.9,0.5,0.1]:
-                        for alpha_paraphrase in [0.5,0.7]:
-                            alpha_str = str(alpha_paraphrase).replace(".","-")
-                            saving_folder = os.path.join(data_folder,f"online_{model_name}_paraphrase-{paraphrase_model}_n{nb_paraphrase}_p{p_paraphrase}_q{q_paraphrase}_alpha{str(alpha_str)}")
-                            try : 
-                                new_data = pd.read_csv(os.path.join(saving_folder,"altered_dataset.csv"),sep="\t")
-                                new_data['paraphrase_model'] = paraphrase_model
-                                new_data['nb_paraphrase_max'] = nb_paraphrase
-                                new_data['p_paraphrase'] = p_paraphrase
-                                new_data['q_paraphrase'] = q_paraphrase
-                                new_data['alpha_paraphrase'] = alpha_paraphrase
-                                new_data['llm_model'] = model_name
-                                data = pd.concat([data,new_data])
-                            except :
-                                continue
+        for str_temp in ['','_temperature_2-3',"_temperature_4-5"]:
+            for paraphrase_model in paraphrase_model_list : #text-davinci-002
+                for nb_paraphrase in [1]:
+                    for p_paraphrase in [0.1]:
+                        for q_paraphrase in [0.9,0.5,0.1]:
+                            for alpha_paraphrase in [0.5,0.7]:
+                                alpha_str = str(alpha_paraphrase).replace(".","-")
+                                saving_folder = os.path.join(data_folder,f"online_{model_name}_paraphrase-{paraphrase_model}_n{nb_paraphrase}_p{p_paraphrase}_q{q_paraphrase}_alpha{str(alpha_str)}{str_temp}")
+                                try : 
+                                    """if model_name == "phi" :
+                                        try :
+                                            new_data = rewrite_data_from_phi(os.path.join(saving_folder,"altered_dataset.csv"))
+                                        except: 
+                                            new_data = pd.read_csv(os.path.join(saving_folder,"altered_dataset.csv"),sep="\t")"""
+                                    new_data = pd.read_csv(os.path.join(saving_folder,"altered_dataset.csv"),sep="\t")
+                                    new_data['paraphrase_model'] = paraphrase_model
+                                    new_data['nb_paraphrase_max'] = nb_paraphrase
+                                    new_data['p_paraphrase'] = p_paraphrase
+                                    new_data['q_paraphrase'] = q_paraphrase
+                                    new_data['alpha_paraphrase'] = alpha_paraphrase
+                                    new_data['llm_model'] = model_name
+                                    data = pd.concat([data,new_data])
+                                    #print(f"{saving_folder} loaded")
+                                except :
+                                    continue
         data = data.reset_index(drop=True)
         agg_dataset = pd.concat([agg_dataset,data])
     
     agg_dataset = agg_dataset.reset_index(drop=True)
     agg_dataset['clean_paraphase_type'] = agg_dataset['paraphase_type'].apply(lambda x: clean_type(x))
-    agg_dataset = agg_dataset[~agg_dataset["altered_text"].str.contains("www|http")]
+    agg_dataset = agg_dataset[agg_dataset["altered_text"].str.contains("www|http")==False]
     agg_dataset['clean_paraphrase_index'] = agg_dataset['index_paraphrase'].apply(lambda x: string_to_list(x))
-    agg_dataset['one_paraphrase'] = agg_dataset['clean_paraphrase_index'].apply(lambda x: len(x) == 1)
+    agg_dataset['one_paraphrase'] = agg_dataset['clean_paraphrase_index'].apply(lambda x: len(x) == 2)
     agg_dataset['first_paraphrase'] = agg_dataset.apply(lambda x: is_first(x.clean_paraphrase_index) if x.one_paraphrase else None,axis =1)
     agg_dataset['consecutive_paraphrase'] = agg_dataset.apply(lambda x: is_consecustive(x.clean_paraphrase_index) if x.one_paraphrase else None,axis =1)
     
     return agg_dataset
 
 
-def clean_type(x):
-    if x == 'absent' or x =="[]":
-        return 0
-    elif x == "['close']":
-        return 1
-    elif x == "['distant']":
-        return 2
-    else :
-        return x
+
+    
+def remove_paraphrase(x):
+    sentences = x.sentences
+    index_para = x.clean_paraphrase_index
+    # on ne traite que els cas ou il y a effectivement eu une paraphrase
+    if len(index_para)>0:
+        if len(index_para)==2 :
+            try : 
+                new_sentences = [sentences[i] for i in range(len(sentences)) if i != index_para[1]]
+                new_text = " ".join(new_sentences)
+            except :
+                print(sentences)
+                print(index_para)
+        else : 
+            new_text = None
+
+        return new_text
+    
+    else : 
+        return None
+
+def build_altered_dataset_without_paraphrase(data):
+    
+    data['sentences'] = data.apply(lambda x: split_into_sentences(x.altered_text), axis=1)
+    
+    old_para = data[['prompt', 'generated_text', 'model_name', 'temperature', 'num_beams',
+       'text', 'llm_model', 'paraphrase_model','sentences', "consecutive_paraphrase","first_paraphrase","one_paraphrase",
+       'nb_paraphrase_max', 'paraphase_type','p_paraphrase', 'q_paraphrase', 'alpha_paraphrase',"clean_paraphrase_index"]]
+    
+    old_para['altered_text'] = old_para.apply(lambda x: remove_paraphrase(x), axis=1)
+    #old_para["clean_paraphrase_index"] = 0
+    old_para = old_para[old_para.altered_text.notnull()]
+
+    #old_para['one_paraphrase'] = 0
+    #old_para['first_paraphrase'] = 0
+    #old_para['consecutive_paraphrase']=0
+    return old_para.reset_index(drop=True)
     
 
 def is_first(x):
@@ -243,3 +284,211 @@ def is_consecustive(x):
         else :
             return 0
 
+def clean_type(x):
+    if x == 'absent' or x =="[]":
+        return 0
+    elif x == "['close']":
+        return 1
+    elif x == "['distant']":
+        return 2
+    else :
+        return x
+    
+
+def rewrite_data_from_phi(path) :
+    f = open(path,"r").readlines()
+    prompt = []
+    generated_text = []
+    model_name = []
+    temperature = []
+    num_beams = []
+    index_paraphrase = []
+    paraphrase_type = []
+    altered_text = []
+    for elt in f : 
+        if len(elt.split("\t"))==8 :
+            prompt.append(elt.split("\t")[0])
+            generated_text.append(elt.split("\t")[1])
+            model_name.append(elt.split("\t")[2])
+            temperature.append(elt.split("\t")[3])
+            num_beams.append(elt.split("\t")[4])
+            index_paraphrase.append(elt.split("\t")[5])
+            paraphrase_type.append(elt.split("\t")[6])
+            altered_text.append(elt.split("\t")[7].replace("endoftextIllustration",""))
+
+    d = pd.DataFrame({"prompt":prompt,"generated_text":generated_text,"model_name":model_name,"temperature":temperature,"num_beams":num_beams,"index_paraphrase":index_paraphrase,"paraphrase_type":paraphrase_type,"altered_text":altered_text}).drop(0)
+
+    d.to_csv(path, sep = '\t', index = False)
+    return d
+
+
+def has_address(text):
+    pattern = r'\b\d{1,6}\s+(?:\w+\s*){1,4}(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Court|Ct|Place|Pl|Square|Sq|Trail|Trl|Circle|Cir)(?:\s+\w+)?(?:,\s+\w+)?(?:,\s+\d{5}(?:-\d{4})?)?\b'
+    matches = re.findall(pattern, text, re.IGNORECASE)
+
+    if matches:
+        return 1
+    else : 
+        return 0 
+
+def has_mail(text) :
+    pattern = pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    matches = re.findall(pattern, text, re.IGNORECASE)
+    if matches:
+        return 1
+    else : 
+        return 0 
+
+def has_phone(text):
+    pattern = r'\b(?:\d{3}[-\.\s]??\d{3}[-\.\s]??\d{4}|\(\d{3}\)\s*\d{3}[-\.\s]??\d{4}|(\d)\1{9})\b'
+    matches = re.findall(pattern, text, re.IGNORECASE)
+    if matches:
+        return 1
+    else : 
+        return 0 
+
+
+
+def detect_list(input_string):
+    pattern = r"(\.\s?([0-9\-–*]{1})\.?\s?){1,2}"
+    match = re.search(pattern, input_string, flags=re.IGNORECASE)
+    if match:
+        #print(match[0])
+        return True
+    else:
+        return False
+
+
+def paraphrase_is_short(clean_paraphrase_index,sentences) :
+    if type(clean_paraphrase_index)== list  :
+        if len(clean_paraphrase_index)==0:
+            return 0 
+        else :
+            i_para = clean_paraphrase_index[0]
+            try :
+                para = sentences[i_para-1]
+            except : 
+                return 0
+            if len(para.split(" "))<5:
+                return 1
+            else :
+                return 0
+    else :
+        return 0
+
+def paraphrase_happened_at_the_end(clean_paraphrase_index, num_sentences) :
+    if clean_paraphrase_index != None :
+        if len(clean_paraphrase_index)==2 :
+            if clean_paraphrase_index[0] >= num_sentences-2 :
+                return 1
+            else :
+                return 0
+        else : 
+            return 0
+    else :
+        return 0
+
+def paraphrase_happened_at_the_end(clean_paraphrase_index, num_sentences) :
+    if clean_paraphrase_index != None :
+        if len(clean_paraphrase_index)==2 :
+            if clean_paraphrase_index[0] >= num_sentences-2 :
+                return 1
+            else :
+                return 0
+        else : 
+            return 0
+    else :
+        return 0
+
+def clean_generated_data(data) :
+    print(f"Data contains at the begining : {len(data)}")
+    # filter by number of sentences
+    new_data = data[data.num_sentences>5]
+    new_data = new_data[new_data.num_sentences<20]
+    print(f"Filtering data with more than 20 sentences and less than 5 sentences. {len(new_data)} samples left")
+
+    # filter by content
+    new_data['has_phone'] = new_data.apply(lambda x: has_phone(x.altered_text), axis=1)
+    new_data = new_data[new_data.has_phone==0]
+    print(f"Filtering data with phone numbers. {len(new_data)} samples left")
+
+    new_data['has_address'] = new_data.apply(lambda x: has_address(x.altered_text), axis=1)
+    new_data = new_data[new_data.has_address==0]
+    print(f"Filtering data with addresses. {len(new_data)} samples left")
+
+    new_data['has_mail'] = new_data.apply(lambda x: has_mail(x.altered_text), axis=1)
+    new_data = new_data[new_data.has_mail==0]
+    print(f"Filtering data with mail addresses. {len(new_data)} samples left")
+
+    new_data['has_list'] = new_data.apply(lambda x: detect_list(x.altered_text), axis=1)
+    new_data = new_data[new_data.has_list==0]
+    print(f"Filtering data with list. {len(new_data)} samples left")
+
+    # filter on paraphrasing condition if it happeened at the end or on to short paraphrase
+    new_data['paraphrase_is_short'] = new_data.apply(lambda x: paraphrase_is_short(x.clean_paraphrase_index,x.sentences), axis=1)
+    new_data = new_data[new_data.paraphrase_is_short==0]
+    print(f"Filtering data with short paraphrase. {len(new_data)} samples left")
+
+    new_data['paraphrase_at_end'] = new_data.apply(lambda x: paraphrase_happened_at_the_end(x.clean_paraphrase_index, x.num_sentences), axis=1)
+    new_data = new_data[new_data.paraphrase_at_end==0]
+    print(f"Filtering data with paraphrase at the end. {len(new_data)} samples left")
+
+    # adding new columns for analysis
+    new_data['has_paraphrase'] = new_data['clean_paraphase_type'].apply(lambda x: 1 if x != 0 else 0)
+
+    prompt_list =  ["Most people start the day by", 
+        "Today I am feeling", 
+        "The thing I like most in the world is",
+        "When I was a little kid", 
+        "I had a terrifying dream last night in which",
+        "I worry a lot about"]
+
+    new_data = new_data[new_data.prompt.isin(prompt_list)]
+    new_data['prompt_cat'] = new_data['prompt'].astype('category').cat.codes
+
+    try :
+        # labele paraphrase that have huge lexical repetition
+        jaccard_median = new_data[new_data.lemma_para_vs_others_jaccard_sentences_similarity>0]['lemma_para_vs_others_jaccard_sentences_similarity'].median()
+        new_data['has_lexical_repetition'] = new_data['lemma_para_vs_others_jaccard_sentences_similarity'].apply(lambda x: 1 if  x > jaccard_median else  0)
+    except :
+        pass
+
+    return new_data.reset_index()
+
+
+def encode_temperature(temperature):
+    if temperature <2 :
+        return 0
+    elif temperature <4 :
+        return 1
+    else : 
+        return 2
+    
+
+def encode_temperature_str(temperature):
+    if temperature <2 :
+        return "low_temperature"
+    elif temperature <4 :
+        return "medium_temperature"
+    else : 
+        return "high_temperature"
+
+def encode_paraphrase(paraphrase):
+    if paraphrase ==0 :
+        return "no_paraphrase"
+    else : 
+        return "paraphrase"
+    
+
+def load_and_clean_data(config):
+    """
+    """
+    data = pd.read_pickle(config['agg_file'])
+    data = clean_generated_data(data)
+    data['temperature_enc'] = data['temperature'].apply(encode_temperature_str)
+    data['paraphrase_enc'] = data['has_paraphrase'].apply(encode_paraphrase)
+    data['combined_label'] = data.apply(lambda x: f"{x['temperature_enc']}_with_{x['paraphrase_enc']}", axis = 1)
+    data["cat_label"] = data['combined_label'].astype('category').cat.codes
+    data['random'] = np.random.rand(data.shape[0])
+
+    return data

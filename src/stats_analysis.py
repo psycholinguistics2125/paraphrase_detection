@@ -67,7 +67,7 @@ def compute_anova_table(
             result["p-unc"] = stats["p-unc"]
             result["np2"] = stats["np2"]
             result["power"] = power_anova(
-                eta=result["np2"], k=len(set(data[x].tolist())), n=len(data), alpha=0.05
+                eta_squared=result["np2"], k=len(set(data[x].tolist())), n=len(data), alpha=0.05
             )
         except:
             result["p-unc"] = 1
@@ -106,5 +106,66 @@ def compute_ttest_table(data: pd.DataFrame, cible: list, col_list: list, seuil=0
         except Exception as e:
 
             #print(e)
+            continue
+    return df_result
+
+
+def compute_pearson_table(
+    data: pd.DataFrame, cible: list, col_list: list, seuil=0.01, method="pearson"
+) -> pd.DataFrame:
+    """compute mann whitney u test for two sets of columns
+
+    Args:
+        data (pd.DataFrame): _description_
+        cible (list): _description_
+        col_list (list): _description_
+        seuil (float, optional): _description_. Defaults to 0.01.
+
+    Returns:
+        pd.DataFrame: _description_
+    """
+    i = 0
+    df_result = pd.DataFrame(
+        columns=[
+            "x",
+            "y",
+            "n",
+            "r",
+            "CI95%",
+            "p-val",
+            "BF10",
+            "power",
+        ]
+    )
+    for elt in list(itertools.product(cible, col_list)):
+        try:
+            x = elt[0]
+            y = elt[1]
+            #print(x,y)
+            result = pg.corr(data[x].apply(float).values,data[y].apply(float).values, method=method)
+            #print(result)
+            result["x"] = x
+            result["y"] = y
+            
+            if result["p-val"].values[0]<= seuil:
+                #print(result)
+                df_result.loc[i] = pd.Series(result.to_dict(orient="index")[method])
+                i = i + 1
+        except Exception as e:
+            result = {
+                "x": elt[0],
+                "y": elt[1],
+                "p-val": 0.2,
+                "r": 0,
+                "CI95%": [0, 0],
+                "BF10": "failed",
+                "power": 0,
+                "n": 0
+            }
+            df_result.loc[i] = pd.Series(result)
+            i = i + 1
+
+
+            print(e,x,y)
             continue
     return df_result

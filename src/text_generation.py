@@ -66,16 +66,19 @@ def load_model(model_name="gpt2", logger=logging.getLogger(__name__)):
     
     elif model_name == "gpt-neo":
         # too heavy
-        tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neo-2.7B")
-        model = AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-neo-2.7B", pad_token_id=tokenizer.eos_token_id).to(device)
+        tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neo-1.3B")
+        model = AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-neo-1.3B", pad_token_id=tokenizer.eos_token_id).to(device)
     
     elif model_name == "bloomz":
         #~ too slow and performance not better than gpt2
         tokenizer = AutoTokenizer.from_pretrained("bigscience/mt0-large")
         model = AutoModelForSeq2SeqLM.from_pretrained("bigscience/mt0-large", pad_token_id=tokenizer.eos_token_id).to(device)
     elif model_name == "pythia":
-        tokenizer = AutoTokenitokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-1.4b-v0")
+        tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-1.4b-v0")
         model = AutoModelForCausalLM.from_pretrained("EleutherAI/pythia-1.4b-v0",  pad_token_id=tokenizer.eos_token_id).to(device)
+    elif model_name == "phi":
+        tokenizer = AutoTokenizer.from_pretrained("microsoft/phi-1_5", trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained("microsoft/phi-1_5", trust_remote_code=True,load_in_4bit=True,pad_token_id=tokenizer.eos_token_id)
     else:
         logger.error("Unknown model name")
         raise ValueError("Unknown model name")
@@ -85,7 +88,7 @@ def load_model(model_name="gpt2", logger=logging.getLogger(__name__)):
     return model, tokenizer
 
 
-def generate_random_temperature(n_sim=200, min=0.9, max=5):
+def generate_random_temperature(n_sim=200, minimum=0.9, maximum=5):
     """
     Generate random temperature for the text generation
 
@@ -104,16 +107,13 @@ def generate_random_temperature(n_sim=200, min=0.9, max=5):
 
     # Generate random values for the vector
     for _ in range(vector_length):
-        if random.random() < 0.5:
-            # 50% chance for values between 0.95 and 1.05
-            value = random.uniform(0.95, 1.05)
-        else:
-            # 50% chance for values between 0.9 and 5 (excluding 0.95 to 1.05 range)
-            value = random.uniform(min, max)
+        
+        value = random.uniform(minimum, maximum)
+        
         random_vector.append(value)
 
-    print("mean:", np.mean(random_vector))
-    print("std:", np.std(random_vector))
+    print("Temperature mean:", np.mean(random_vector))
+    print("Temperature std:", np.std(random_vector))
     return random_vector
 
 
@@ -195,7 +195,9 @@ def generate_dataset_from_config(
 
     prompt_list = config["prompt_list"]
     model_name = config["model_name"]
-    saving_path = os.path.join(saving_folder, f"{model_name}_{config['dataset_name']}")
+    str_temperature = f"_{config['min_temperature']}-{config['max_temperature']}"
+
+    saving_path = os.path.join(saving_folder, f"{model_name}_temperature {str_temperature}_{config['dataset_name']}")
     n_sim = len(prompt_list) * config["n_simulations"]
 
     logger.info(
@@ -212,12 +214,12 @@ def generate_dataset_from_config(
     )
 
     temperature_list = generate_random_temperature(
-        n_sim=n_sim, min=config["min_temperature"], max=config["max_temperature"]
+        n_sim=n_sim, minimum=config["min_temperature"], maximum=config["max_temperature"]
     )
     num_beams_list = [random.randint(3, 5) for _ in range(n_sim)]
 
     # Load model
-    if model_name in ["falcon-1b", "gpt2", "stablelm-3b","pythia"]:
+    if model_name in ["falcon-1b", "gpt2", "stablelm-3b","pythia","phi"]:
         model, tokenizer = load_model(model_name=model_name)
         def text_generation_function(prompt, temperature, num_beams):
             return generate_from_prompt(
@@ -242,11 +244,12 @@ def generate_dataset_from_config(
                     prompt,
                     temperature=temperature,
                     num_beams=num_beams )
+            clean_text = generated_text.replace("\n", " ").replace("\t", " ")
 
             dataset.loc[k] = pd.Series(
                 {
                     "prompt": prompt,
-                    "generated_text": generated_text,
+                    "generated_text": clean_text,
                     "model_name": model_name,
                     "temperature": temperature,
                     "num_beams": num_beams,
