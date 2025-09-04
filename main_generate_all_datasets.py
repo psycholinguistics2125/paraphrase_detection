@@ -31,13 +31,13 @@ if __name__ == "__main__":
                 config=config['generate_dataset'], logger=logger, save=True, clean=True
             )
             
-    for online in [True]:
+    for online in [False]:
         config['generate_dataset']['online'] = online
         if online:
-            for paraphrase_model in ["gpt-3.5-turbo", "ibm/qcpg-sentences"]: #text-davinci-002
-                for nb_paraphrase in [1,4]:
+            for paraphrase_model in ["gpt-3.5-turbo" ]: #"ibm/qcpg-sentences"]: #text-davinci-002
+                for nb_paraphrase in [1]:
                     for p_paraphrase in [0.1]:
-                        for q_paraphrase in [0.9,0.5,0.1]:
+                        for q_paraphrase in [0.5,0.1,0.9]:
                             for alpha_paraphrase in [0.5,0.7]:
                                 config['paraphrase_dataset']['model_name'] = paraphrase_model
                                 config['online_param']['nb_paraphrase_max'] = nb_paraphrase
