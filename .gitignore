@@ -2,7 +2,12 @@
 notebook/old_data/*
 notebook/results/*
 data/altered_corpus/*
+data/corpus/*
 data/old/*
+models/*
+results/*
+sources_idea/*
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
