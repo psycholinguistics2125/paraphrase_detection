@@ -1,15 +1,45 @@
 [![Code style: black](https://img.shields.io/badge/Code%20Style-Black-black)](https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html)
 
 
+[![Dataset](https://img.shields.io/badge/🤗%20HuggingFace-Dataset-yellow)](https://huggingface.co/datasets/binbin83/synthetic_deraillement_and_repetition)
+
+
+
 # PARAPHRASE GENERATOR AND DETECTOR
 
 This repository was build to achieve the following goals:
-    1. Generate dataset of story using small LLM such as GPT-2, falcon-1b etc.
+    1. Generate dataset of story using small LLM such as GPT-2, falcon-1b etc. with different parameters setting (temperature etc.)
     2. Introduce a paraphrase at a specific place in the story. (at the i sentence)
         a) The first step is to create a paraphrase generator using SOTA models
         b) The second step is to create a streamlit app to evaluate the quality of the paraphrase
         c) It will enable us to have a human controlled and labeled dataset of semantic repetition
     3. Evaluate how speech disorder technics found and evaluate this semantic repetition.  
+
+## Overview
+
+This repository provides the computational framework for analyzing **semantic perseveration** and **incoherence** in psychiatric conditions through theory-driven generative language simulations. The codebase implements novel Natural Language Processing (NLP) metrics designed to capture the paradoxical interplay between semantic repetitiveness and derailment in Formal Thought Disorder (FTD).
+
+
+## Associated Research Paper
+
+**"Characterizing the Paradoxical Interplay of Semantic Perseveration and Incoherence in Psychiatry using Theory-Driven Generative Language Simulations"**
+
+*Authors: Robin Quillivic¹'², Raymond J. Dolan³'⁴, Isaac Fradkin⁵*
+
+### Key Research Contributions
+
+- **Novel Density-Based Metrics**: Development of semantic density metrics that dissociate repetitiveness from derailment in formal thought disorder
+- **Online Paraphrasing Method**: Innovative real-time paraphrase insertion during text generation to simulate downstream effects of repetition
+- **Synthetic Dataset**: Controlled dataset with independent manipulation of semantic repetitiveness and derailment
+- **Empirical Validation**: Superior performance in detecting repetitive speech patterns across psychiatric dimensions
+
+### Research Problem
+
+Traditional NLP metrics used in psychiatry, particularly cosine-based semantic distances, suffer from **interpretive ambiguity**:
+- **Increased semantic distances** → Could indicate derailment/disorganization
+- **Decreased semantic distances** → Could indicate either normal coherence OR pathological repetitiveness
+
+This creates a fundamental challenge in clinical applications where both phenomena may co-occur, as the same metric result can have opposite clinical interpretations.
 
 
 ## 0. Install
@@ -162,9 +192,38 @@ link to the app: https://paraphrase-evaluation.streamlit.app/
 
 In the config file if config['generate_dataset']['online'] is set to True, then the generation process will add a paraphrase with a probability of config['online_param']['p_paraphrase'] at each step of the process.
 
+
+Our **online paraphrasing insertion** method is the an innovation that enables realistic simulation of semantic repetition during text generation:
+
+**Method**: Instead of post-hoc paraphrasing, we integrate paraphrases **during** the text generation process itself, mimicking how repetitive thinking constrains and biases subsequent discourse in real human speech.
+
+**Parameters**:
+- **P**: Probability of inserting a paraphrase at each generation step [0.1]
+- **Q**: Probability of paraphrasing recent vs. distant sentences [0.1, 0.5, 0.9]  
+- **α**: Pareto distribution parameter controlling paraphrase distance [0.5, 0.7]
+
+**Paraphrase Generation**: Uses GPT-3.5 turbo via OpenAI API with the prompt:
+> *"Paraphrase the following sentence, minimizing the words in common with the original sentence."*
+
+This approach captures the **downstream effects** of repetitive thinking on narrative flow, unlike simple word repetition or post-hoc modifications.
+
 In consequences, the next step of text generation will be influenced by this repetition. This will mimic more precisely the human speech disorder.
 --- 
 
 ## 4. Evaluate how speech disorder technics found and evaluate this semantic repetition.
 
+To evaluate speech disorder technics we reproduce well known metrics (cosine based) and implement new metrics.
 
+To reproduce the result presented in the paper, the notebooks to be used are: 
+- reproduce_results_data_analysis.ipynb
+- reproduce_results_story_dataset.ipynb
+- reproduce_results_story_dataset.ipynb
+
+
+
+
+
+
+## Acknowledgments
+
+Special thanks to the computational psychiatry and NLP communities for their foundational work in this area, and to all participants in the empirical studies that made this research possible.
