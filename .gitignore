@@ -1,3 +1,9 @@
+## specific folders
+notebook/old_data/*
+notebook/results/*
+data/altered_corpus/*
+data/old/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

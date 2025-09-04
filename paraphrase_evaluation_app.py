@@ -6,6 +6,7 @@ Script of the streamlit application.
 import streamlit as st
 import pandas as pd
 import os
+import ast
 
 from src.utils import load_config
 
@@ -80,7 +81,12 @@ def main():
             st.sidebar.write(elt)
 
         st.header("Loaded Dataset")
-        st.dataframe(dataset[["altered_text", "index_paraphrase", "evaluation"]].head(5))
+        try: 
+            dataset = dataset.rename(columns={"paraphase_type": "paraphrase_type"})
+            dataset['index_paraphrase'] = dataset['index_paraphrase'].apply(lambda x: list(ast.literal_eval(x)))
+        except:
+            pass
+        st.dataframe(dataset[["altered_text", "index_paraphrase", "evaluation","paraphrase_type"]].head(5))
 
         st.sidebar.write("**Work In Progres**:")
         example_index = st.sidebar.empty()
@@ -95,13 +101,13 @@ def main():
         # Split the text into sentences
         sentences = dataset.iloc[current_example]["altered_text"].split(".")
         para_index = dataset.iloc[current_example]["index_paraphrase"]
-
+        print(para_index)
         st.header("Example to validate")
 
         # Create a text input for paraphrase validation
         for i, sentence in enumerate(sentences):
             if len(sentence) > 2:
-                if i == para_index or i == para_index + 1:
+                if i == para_index[0] or i == para_index[1]:
                     st.markdown(
                         f"{i+1}. **{sentence.strip()}**",
                     )
@@ -109,7 +115,7 @@ def main():
                     st.write(f"{i+1}. {sentence}")
 
         st.subheader(
-            f"The sentence n°{int(para_index + 1)} was paraphrased into n°{int(para_index + 2)}"
+            f"The sentence n°{int(para_index[0] + 1)} was paraphrased into n°{int(para_index[1] + 1)}"
         )
         st.write("Please evaluate the quality of the paraphrase.")
 
