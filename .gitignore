@@ -7,7 +7,7 @@ data/old/*
 models/*
 results/*
 sources_idea/*
-
+/notebook/neosca_batches
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
