@@ -22,9 +22,9 @@ This repository provides the computational framework for analyzing **semantic pe
 
 ## Associated Research Paper
 
-**"Characterizing the Paradoxical Interplay of Semantic Perseveration and Incoherence in Psychiatry using Theory-Driven Generative Language Simulations"**
+**"Characterizing the Paradoxical Interplay of Semantic Perseveration and Derailment in Psychiatry using Theory-Driven Generative Language Simulations"**
 
-*Authors: Robin Quillivic¹'², Raymond J. Dolan³'⁴, Isaac Fradkin⁵*
+*Authors: Robin Quillivic, Raymond J. Dolan, Isaac Fradkin
 
 ### Key Research Contributions
 
